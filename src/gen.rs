@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::io::prelude::*;
 
@@ -88,7 +88,17 @@ impl Generator {
     fn gen_in_order(&self, deps: &mut Vec<Schema>, output: &mut impl Write) -> Result<()> {
         let mut gs = GenState::new(deps)?.with_chrono_dates(self.templater.use_chrono_dates);
 
+        // hash set of all written types
+        let mut names = HashSet::<String>::new();
+
         while let Some(s) = deps.pop() {
+            if let Some(name) = s.name() {
+                if names.contains(&name.name) {
+                    // to prevent duplicates
+                    continue;
+                }
+                names.insert(name.name.clone());
+            }
             match s {
                 // Simply generate code
                 Schema::Fixed { .. } => {
